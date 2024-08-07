@@ -3,9 +3,9 @@ import { NextResponse, NextRequest } from "next/server";
 
 // importing models
 import User from "@/models/userModel";
-
 // for token and encryption
-import bcrypt from "bcryptjs";
+import bcryptjs from "bcryptjs";
+import { sendEmail } from "@/helpers/mailer";
 
 connect();
 
@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
         }
 
         // hasded password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPassword = await bcryptjs.hash(password, salt);
 
         // create new user
         const newUser = new User({
@@ -46,6 +46,13 @@ export async function POST(request: NextRequest) {
         });
 
         const response = await newUser.save();
+
+        // TODO: Send verification email
+        await sendEmail({
+            email,
+            emailType: "verify",
+            userId: response._id,
+        });
 
         return NextResponse.json(
             {
@@ -58,6 +65,7 @@ export async function POST(request: NextRequest) {
             }
         );
     } catch (error: any) {
+        console.log(error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
